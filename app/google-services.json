@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "554728490287",
+    "project_id": "joyfulbless-4427a",
+    "storage_bucket": "joyfulbless-4427a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554728490287:android:ae8e1e1ebf6f5c05908dda",
+        "android_client_info": {
+          "package_name": "com.blessing.channel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "554728490287-33ll0bai03ingidakv00o9baifpfanba.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blessing.channel",
+            "certificate_hash": "6459ef06af2a85e09e9a099aa1f25d3c72f0236a"
+          }
+        },
+        {
+          "client_id": "554728490287-j9u6iilm6mvf6k6lntdqjspuaes1p2pf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLkJWr13bKsKVykKRfDzntSb2XeJsGJnI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "554728490287-j9u6iilm6mvf6k6lntdqjspuaes1p2pf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "554728490287-gbl92na8rn28u48aio899lpip1n9arp6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.joyful.bless"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
