@@ -7,7 +7,7 @@ import com.kakao.sdk.user.UserApiClient
 
 class KakaoLoginService(
     private val activity: Activity,
-    private val onResult: (OAuthToken?) -> Unit
+    private val onResult: (String) -> Unit
 ) {
     fun login() {
         Log.d("KakaoLoginService", "로그인 시도 시작됨1.")
@@ -23,7 +23,7 @@ class KakaoLoginService(
                     loginWithAccount()
                 } else {
                     Log.d("KakaoLoginService", "카카오톡 로그인 성공 ${token?.accessToken}")
-                    onResult(token)
+                    fetchUserInfo()
                 }
             }
         } else {
@@ -33,19 +33,30 @@ class KakaoLoginService(
         }
     }
 
-    private fun loginWithAccount() {
-        Log.d("KakaoLoginService", "로그인 시도 시작됨")
-        Log.d("KakaoLoginService", "Activity class: ${activity::class.java.simpleName}")
-
-        UserApiClient.instance.loginWithKakaoAccount(activity) { token, error ->
-            Log.d("KakaoLoginService", "카카오 계정 로그인 시도22222")
-            if (error != null) {
-                Log.e("KakaoLoginService", "카카오계정 로그인 실패", error)
-                onResult(null)
+    private fun fetchUserInfo() {
+        UserApiClient.instance.me { user, error ->
+            if (error != null || user == null) {
+                onResult("게스트")
             } else {
-                Log.d("KakaoLoginService", "카카오계정 로그인 성공 ${token?.accessToken}")
-                onResult(token)
+                val name = user.kakaoAccount?.profile?.nickname ?: "게스트"
+                onResult(name) // ✅ 수정 완료
             }
         }
     }
+
+    private fun loginWithAccount() {
+        Log.d("KakaoLoginService", "카카오 계정 로그인 시도")
+
+        UserApiClient.instance.loginWithKakaoAccount(activity) { token, error ->
+            if (error != null) {
+                Log.e("KakaoLoginService", "카카오 계정 로그인 실패", error)
+                onResult("게스트")
+            } else {
+                Log.d("KakaoLoginService", "카카오 계정 로그인 성공 ${token?.accessToken}")
+                // ✅ 로그인 성공 후 사용자 정보 요청
+                fetchUserInfo()
+            }
+        }
+    }
+
 }

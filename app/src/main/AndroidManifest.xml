@@ -20,7 +20,10 @@
         <meta-data
             android:name="com.kakao.sdk.AppKey"
             android:value="${kakao_native_key}"/>
-
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"
+            />
 <!--        &lt;!&ndash; ✅ AuthCodeHandlerActivity → intent-filter 필요 없음! export만 설정 &ndash;&gt;-->
 <!--        <activity-->
 <!--            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"-->
@@ -55,6 +58,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".MainScreenActivity" />
 
         <!-- 카카오 로그인, 인가코드를 받기 위한 액티비티 -->
         <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"

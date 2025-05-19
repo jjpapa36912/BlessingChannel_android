@@ -11,10 +11,17 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.ButtonDefaults
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.blessing.channel.ui.theme.BlessingChannelTheme
+import com.blessing.channel.viewmodel.MainViewModel
 import com.kakao.sdk.auth.AuthCodeClient
 import com.kakao.sdk.common.KakaoSdk
 import com.navercorp.nid.NaverIdLoginSDK
@@ -35,9 +43,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("MainActivity", "🔥 MainActivity 시작됨")
+
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_KEY)
 
-        getKeyHash()
         // Kakao 초기화
 
         // Naver 초기화
@@ -49,10 +58,14 @@ class MainActivity : ComponentActivity() {
         )
 
         googleLoginService = GoogleLoginService(this) { account ->
-            if (account != null) {
-                Log.i("GoogleLogin", "구글 로그인 성공: ${account.email}")
-            } else {
-                Log.e("GoogleLogin", "구글 로그인 실패")
+            account?.let {
+                val intent = Intent(this, MainScreenActivity::class.java).apply {
+                    putExtra("name", it.displayName ?: "")
+                    putExtra("email", it.email ?: "")
+                }
+                Log.i("GoogleLogin", "구글 로그인 성공: ${it.email}")
+                startActivity(intent)
+                finish()
             }
         }
         // ✅ launcher 등록
@@ -64,25 +77,50 @@ class MainActivity : ComponentActivity() {
         // ✅ launcher를 서비스에 연결
         googleLoginService.registerLauncher(googleLoginLauncher)
 
-        kakaoLoginService = KakaoLoginService(this) { token ->
-            Log.d("KakaoLogin", "콜백 도착")
-            if (token != null) {
-                Log.i("KakaoLogin", "카카오 로그인 성공! 액세스 토큰: ${token.accessToken}")
-            } else {
-                Log.e("KakaoLogin", "카카오 로그인 실패")
+        kakaoLoginService = KakaoLoginService(this) { name ->
+            val intent = Intent(this, MainScreenActivity::class.java).apply {
+                putExtra("name", name)
             }
+            startActivity(intent)
+            finish()
         }
 
-        naverLoginService = NaverLoginService(this) { token ->
-            if (token != null) {
-                Log.i("NaverLogin", "네이버 로그인 성공! 토큰: $token")
-            } else {
-                Log.e("NaverLogin", "네이버 로그인 실패")
+        naverLoginService = NaverLoginService(this) { name ->
+            val intent = Intent(this, MainScreenActivity::class.java).apply {
+                putExtra("name", name)
             }
+            startActivity(intent)
+            finish()
         }
+//        naverLoginService = NaverLoginService(this) { token ->
+//            if (token != null) {
+//                val userName = "카카오사용자" // 실사용 시 Kakao API로 이름 가져오기
+//                val intent = Intent(this, MainScreenActivity::class.java).apply {
+//                    putExtra("name", userName)
+//                    putExtra("email", "kakao@example.com") // 예시
+//                }
+//                startActivity(intent)
+//                finish()
+//            } else {
+//                Log.e("NaverLogin", "네이버 로그인 실패")
+//            }
+//        }
 
         setContent {
+            Log.d("MainActivity", "📦 setContent 진입함") // 이거 추가
+
             BlessingChannelTheme {
+                Log.d("MainActivity", "🎨 Theme 블록 진입함") // 이거도 추가
+                val viewModel: MainViewModel = viewModel()
+
+                val name = intent.getStringExtra("name") ?: ""
+                val email = intent.getStringExtra("email") ?: ""
+
+                LaunchedEffect(Unit) {
+                    viewModel.setUser(name)
+                }
+
+
                 LoginScreen(
                     onGoogleLoginClick = { googleLoginService.login() },
                     onKakaoLoginClick = { kakaoLoginService.login() },
@@ -96,34 +134,6 @@ class MainActivity : ComponentActivity() {
 //        Log.d("MainActivity", "onNewIntent called: $intent")
 //        AuthCodeClient.instance.handleRedirectIntent(intent)
 //    }
-// ✅ KeyHash 디버그 함수
-private fun getKeyHash() {
-    try {
-        val packageInfo = packageManager.getPackageInfo(
-            packageName,
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
-                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
-            else
-                android.content.pm.PackageManager.GET_SIGNATURES
-        )
-        val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-            packageInfo.signingInfo?.apkContentsSigners
-        } else {
-            @Suppress("DEPRECATION")
-            packageInfo.signatures
-        }
-        if (signatures != null) {
-            for (signature in signatures) {
-                val md = java.security.MessageDigest.getInstance("SHA")
-                md.update(signature.toByteArray())
-                val keyHash = android.util.Base64.encodeToString(md.digest(), android.util.Base64.NO_WRAP)
-                Log.d("KeyHash", "KeyHash: $keyHash")
-            }
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
-}
 
 }
 
@@ -133,10 +143,12 @@ private fun getKeyHash() {
 
 @Composable
 fun LoginScreen(
+
     onGoogleLoginClick: () -> Unit,
     onKakaoLoginClick: () -> Unit,
     onNaverLoginClick: () -> Unit
 ) {
+    Log.d("LoginScreen", "🟢 LoginScreen 호출됨")
     Box(
         modifier = Modifier
             .fillMaxSize()

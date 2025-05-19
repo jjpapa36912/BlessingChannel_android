@@ -88,6 +88,10 @@ dependencies {
     implementation("com.navercorp.nid:oauth:5.9.0")
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation ("androidx.compose.material:material-icons-extended:1.6.1")
+    implementation ("com.google.android.gms:play-services-ads:23.0.0")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9")
@@ -119,6 +123,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.runtime.android)
+//    implementation(libs.play.services.ads.api)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
