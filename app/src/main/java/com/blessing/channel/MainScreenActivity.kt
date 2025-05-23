@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
@@ -23,24 +24,30 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
 import com.blessing.channel.components.AdBanner
 import com.blessing.channel.ui.mypage.MyPageActivity
 import com.blessing.channel.ui.theme.AppTheme
 import com.blessing.channel.viewmodel.MainViewModel
+import java.util.*
 
 class MainScreenActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val name = intent.getStringExtra("name") ?: ""
+        val userName = intent.getStringExtra("name") ?: ""
+        Log.d("MainScreenActivity", "userName from intent: $userName")
+
+        val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        viewModel.setUserIfEmpty(userName)
+        // 🔄 기존 로컬 SharedPreferences 호출 제거
+        // viewModel.loadTotalDonation(this)
+
+        // ✅ 서버에서 총 모금액 가져오기
+        viewModel.fetchTotalDonationFromServer()
 
         setContent {
             AppTheme {
-                val viewModel: MainViewModel = viewModel()
-                LaunchedEffect(Unit) {
-                    viewModel.setUser(name)
-                }
                 MainScreen(viewModel = viewModel)
             }
         }
@@ -53,6 +60,10 @@ fun MainScreen(viewModel: MainViewModel) {
     val user by viewModel.user.collectAsState()
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
+
+    val donation by viewModel.totalDonation.collectAsState()
+
+    Log.d("MainScreen", "User state: $user")
 
     Column(
         modifier = Modifier
@@ -85,38 +96,21 @@ fun MainScreen(viewModel: MainViewModel) {
                 DropdownMenuItem(text = { Text("로그아웃") }, onClick = {
                     expanded = false
                     viewModel.logout()
-//                    context.startActivity(Intent(context, MainActivity::class.java))
-                    context.startActivity(Intent(context, MyPageActivity::class.java).apply {
-                        putExtra("name", user?.name ?: "")
-                    })
-
+                    context.startActivity(Intent(context, MainActivity::class.java))
                     (context as? Activity)?.finish()
                 })
             }
         }
 
         DonationProgressBar(
-            current = viewModel.totalEarnedWon,
+            current = donation,
             goal = 1_000_000
-        )
-
-        Text(
-            text = "오늘의 수익: ${viewModel.totalEarnedWon}원",
-            fontSize = 16.sp,
-            color = Color(0xFF795548),
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .padding(top = 8.dp)
-                .align(Alignment.CenterHorizontally)
         )
 
         if (user != null) {
             UserProfile(user!!.name)
-        }
 
-        AdGrid(viewModel)
-
-        if (user != null) {
+            Log.d("MainScreen", "Showing RewardedAd Button for user: ${user!!.name}")
             Button(
                 onClick = {
                     viewModel.tryRewardedAd(user!!.name, context)
@@ -126,9 +120,13 @@ fun MainScreen(viewModel: MainViewModel) {
                     .fillMaxWidth()
                     .padding(vertical = 10.dp)
             ) {
-                Text("광고 보고 코인 받기", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("광고 보고 기부 하기", color = Color.White, fontWeight = FontWeight.Bold)
             }
+        } else {
+            Log.d("MainScreen", "User is null, not showing RewardedAd Button")
         }
+
+        AdGrid(viewModel)
 
         Text(
             text = "Thank you!",
@@ -144,6 +142,7 @@ fun MainScreen(viewModel: MainViewModel) {
 @Composable
 fun DonationProgressBar(current: Int, goal: Int) {
     val progress = current.toFloat() / goal
+
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
         Text(
             text = "현재 모금액: ${current}원 / ${goal}원",

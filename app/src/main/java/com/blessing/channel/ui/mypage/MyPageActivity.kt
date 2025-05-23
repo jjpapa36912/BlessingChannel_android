@@ -18,6 +18,7 @@ import com.blessing.channel.ui.theme.AppTheme
 import com.blessing.channel.viewmodel.MainViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.layout.padding
+import androidx.lifecycle.ViewModelProvider
 
 
 class MyPageActivity : ComponentActivity() {
@@ -27,6 +28,9 @@ class MyPageActivity : ComponentActivity() {
 
         // ✅ 사용자 이름을 Intent에서 받아오기
         val userName = intent.getStringExtra("name") ?: ""
+        // ✅ ViewModel을 Activity Scope로 획득
+        val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        viewModel.setUser(userName)
 
         setContent {
             AppTheme {

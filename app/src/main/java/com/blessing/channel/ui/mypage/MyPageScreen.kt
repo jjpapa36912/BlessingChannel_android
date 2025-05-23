@@ -56,9 +56,6 @@ fun MyPageScreen(
         }
     }
 
-    val totalEarned = viewModel.totalEarnedWon
-    val pointRate = 0.1f
-    val earnedPoints = (totalEarned * pointRate).toInt()
     val canRedeem = point >= 100
 
     LaunchedEffect(Unit) {
@@ -178,8 +175,6 @@ fun MyPageScreen(
 
             Text("현재 포인트: ${point}P", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("누적 수익: ${totalEarned}원", fontSize = 16.sp)
-            Text("환산 포인트 (누적): ${earnedPoints}P", fontSize = 16.sp)
 
             Spacer(modifier = Modifier.height(12.dp)) // ← 약간의 여백 추가
 

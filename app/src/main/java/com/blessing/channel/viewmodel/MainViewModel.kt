@@ -29,6 +29,9 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 
 data class User(val name: String, val email: String)
 data class RankedUser(val name: String, val point: Int)
@@ -50,15 +53,51 @@ class MainViewModel : ViewModel() {
     private val _point = MutableStateFlow(0)
     val point: StateFlow<Int> = _point
 
-    var bannerViewCount = 0
-        private set
+    private val _bannerViewCount = MutableStateFlow(0)
+    val bannerViewCount: StateFlow<Int> = _bannerViewCount
 
-    private var rewardedEarnedAmount: Int? = null
+    private val _rewardedEarnedAmount = MutableStateFlow(0)
+    val rewardedEarnedAmount: StateFlow<Int> = _rewardedEarnedAmount
+
     private var rewardedAd: RewardedAd? = null
+    private val _totalDonation = MutableStateFlow(0)
+    val totalDonation: StateFlow<Int> = _totalDonation
+    fun loadTotalDonation(context: Context) {
+        val prefs = context.getSharedPreferences("donation_prefs", Context.MODE_PRIVATE)
+        _totalDonation.value = prefs.getInt("total_donation", 0)
+    }
+    fun fetchTotalDonationFromServer() {
+        viewModelScope.launch {
+            try {
+                val donation = withContext(Dispatchers.IO) {
+                    val request = Request.Builder()
+                        .url("http://10.0.2.2:8080/api/ads/total")
+                        .get()
+                        .build()
 
-    val totalEarnedWon: Int
-        get() = (bannerViewCount * 1) + ((rewardedEarnedAmount ?: 0) * 20)
+                    val response = OkHttpClient().newCall(request).execute()
+                    val body = response.body?.string() ?: return@withContext 0
+                    val json = JSONObject(body)
 
+                    json.getInt("totalDonation")
+                }
+
+                _totalDonation.value = donation
+                Log.d("DonationFetch", "서버 총 모금액: $donation")
+
+            } catch (e: Exception) {
+                Log.e("DonationFetch", "서버 요청 실패", e)
+            }
+        }
+    }
+
+
+
+
+    private fun saveTotalDonation(context: Context) {
+        val prefs = context.getSharedPreferences("donation_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("total_donation", _totalDonation.value).apply()
+    }
     fun setUser(name: String) {
         _user.value = User(name, "")
     }
@@ -80,14 +119,23 @@ class MainViewModel : ViewModel() {
         )
     }
 
-    fun incrementBannerView(tag: String) {
-        bannerViewCount++
+    fun incrementBannerView(tag: String, context: Context) {
+        _bannerViewCount.value += 1
         _point.value += 1
+        _totalDonation.value += 1
+        saveTotalDonation(context)
+    }
+    fun setUserIfEmpty(name: String) {
+        if (_user.value == null || _user.value?.name.isNullOrBlank()) {
+            _user.value = User(name, "")
+        }
     }
 
-    fun incrementRewardAd() {
-        rewardedEarnedAmount = (rewardedEarnedAmount ?: 0) + 1
+    fun incrementRewardAd(context: Context) {
+        _rewardedEarnedAmount.value += 1
         _point.value += 10
+        _totalDonation.value += 20
+        saveTotalDonation(context)
     }
 
     fun deleteProfileImage(context: Context) {
@@ -141,16 +189,6 @@ class MainViewModel : ViewModel() {
                 Log.e("RedeemSave", "서버 저장 실패", e)
             }
         }
-    }
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun recordBannerView(tag: String, context: Context) {
-        if (!isBannerViewTodayAllowed(tag, context)) return
-
-        bannerViewCount++
-        _point.value += 1 // 포인트 증가
-
-        markBannerViewToday(tag, context)
-        sendBannerViewToServer(tag, context)
     }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun isBannerViewTodayAllowed(tag: String, context: Context): Boolean {
@@ -241,15 +279,19 @@ class MainViewModel : ViewModel() {
         }
         val adRequest = AdRequest.Builder().build()
         val adUnitId = if (BuildConfig.DEBUG)
-            "ca-app-pub-3940256099942544/5224354917" else "ca-app-pub-xxxx/yyyy"
+            "ca-app-pub-3940256099942544/5224354917" else "ca-app-pub-5025904812537246/9924147936"
+
         RewardedAd.load(
             context, adUnitId, adRequest,
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
                     rewardedAd?.show(context as Activity) { rewardItem: RewardItem ->
-                        rewardedEarnedAmount = (rewardedEarnedAmount ?: 0) + rewardItem.amount
-                        Log.d("RewardAd", "보상 수령: ${rewardItem.amount}")
+                        _rewardedEarnedAmount.value = (_rewardedEarnedAmount.value ?: 0) + rewardItem.amount
+                        _point.value += 10
+                        _totalDonation.value += 20
+                        saveTotalDonation(context)
+                        Log.d("RewardAd", "보상 수령: ${rewardItem.amount}, 총 기부액: ${_totalDonation.value}")
                         recordRewardUseToday(context)
                         claimReward(userId, rewardItem.amount, context)
                     }
@@ -261,6 +303,25 @@ class MainViewModel : ViewModel() {
             })
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun recordBannerView(tag: String, context: Context) {
+        if (!isBannerViewTodayAllowed(tag, context)) return
+        Log.d("BannerAd", "recordBannerView called for $tag")
+        if (!isBannerViewTodayAllowed(tag, context)) {
+            Log.d("BannerAd", "광고 이미 노출됨: $tag")
+            return
+        }
+
+        _bannerViewCount.value += 1
+        _point.value += 1
+        _totalDonation.value += 1
+        saveTotalDonation(context)
+
+        markBannerViewToday(tag, context)
+        sendBannerViewToServer(tag, context)
+        Log.d("BannerAd", "광고 수익 반영: $tag → totalDonation: ${_totalDonation.value}")
+
+    }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun isRewardAllowedToday(context: Context): Boolean {
         val prefs = context.getSharedPreferences("reward_limit", Context.MODE_PRIVATE)
