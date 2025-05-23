@@ -44,6 +44,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "🔥 MainActivity 시작됨")
+        // ✅ AdMob 초기화
+        com.google.android.gms.ads.MobileAds.initialize(this)
 
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_KEY)
 

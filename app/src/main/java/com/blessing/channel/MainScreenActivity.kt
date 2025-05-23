@@ -1,36 +1,36 @@
+// ✅ MainScreenActivity.kt
 package com.blessing.channel
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material.icons.filled.MoreHoriz
-
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blessing.channel.components.AdBanner
+import com.blessing.channel.ui.mypage.MyPageActivity
 import com.blessing.channel.ui.theme.AppTheme
 import com.blessing.channel.viewmodel.MainViewModel
 
 class MainScreenActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val name = intent.getStringExtra("name") ?: ""
@@ -38,59 +38,21 @@ class MainScreenActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 val viewModel: MainViewModel = viewModel()
-
-                // 유저 정보 초기 설정
                 LaunchedEffect(Unit) {
                     viewModel.setUser(name)
                 }
-
                 MainScreen(viewModel = viewModel)
             }
         }
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val user by viewModel.user.collectAsState()
     val context = LocalContext.current
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = user?.let { "${it.name}님 환영합니다" } ?: "")
-                },
-                actions = {
-                    if (user == null) {
-                        TextButton(onClick = {
-                            viewModel.login(context)
-                        }) {
-                            Text("Log in")
-                        }
-                    } else {
-                        TextButton(onClick = {
-                            viewModel.logout()
-
-                            // ✅ 로그인 화면(MainActivity)으로 이동
-                            context.startActivity(Intent(context, MainActivity::class.java))
-                            (context as? Activity)?.finish()
-                        }) {
-                            Text("Log out")
-                        }
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // 메인 콘텐츠 들어가는 곳
-        }
-    }
+    var expanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -98,17 +60,67 @@ fun MainScreen(viewModel: MainViewModel) {
             .background(Color(0xFFFFEB85))
             .padding(10.dp)
     ) {
-        Header(user = user, onLogin = { viewModel.login(context) }, onLogout = { viewModel.logout() })
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = { expanded = true }) {
+                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color(0xFF6B3E26))
+            }
+
+            Text(text = "${user?.name ?: "게스트"}님 환영합니다", fontWeight = FontWeight.Bold)
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(text = { Text("마이페이지") }, onClick = {
+                    expanded = false
+                    val intent = Intent(context, MyPageActivity::class.java).apply {
+                        putExtra("name", user?.name ?: "")
+                    }
+                    context.startActivity(intent)
+                })
+                DropdownMenuItem(text = { Text("로그아웃") }, onClick = {
+                    expanded = false
+                    viewModel.logout()
+//                    context.startActivity(Intent(context, MainActivity::class.java))
+                    context.startActivity(Intent(context, MyPageActivity::class.java).apply {
+                        putExtra("name", user?.name ?: "")
+                    })
+
+                    (context as? Activity)?.finish()
+                })
+            }
+        }
+
+        DonationProgressBar(
+            current = viewModel.totalEarnedWon,
+            goal = 1_000_000
+        )
+
+        Text(
+            text = "오늘의 수익: ${viewModel.totalEarnedWon}원",
+            fontSize = 16.sp,
+            color = Color(0xFF795548),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .align(Alignment.CenterHorizontally)
+        )
 
         if (user != null) {
             UserProfile(user!!.name)
         }
 
-        AdGrid()
+        AdGrid(viewModel)
 
         if (user != null) {
             Button(
-                onClick = { viewModel.tryRewardedAd(user!!.email, context) },
+                onClick = {
+                    viewModel.tryRewardedAd(user!!.name, context)
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF795548)),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -130,25 +142,23 @@ fun MainScreen(viewModel: MainViewModel) {
 }
 
 @Composable
-fun Header(user: com.blessing.channel.viewmodel.User?, onLogin: () -> Unit, onLogout: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu", tint = Color(0xFF795548))
-        Text(text = user?.let { "${it.name}님 환영합니다" } ?: "", fontWeight = FontWeight.Bold, color = Color(0xFF795548))
-        Row {
-            if (user == null) {
-                TextButton(onClick = onLogin) {
-                    Text("Log in", color = Color(0xFF795548), fontWeight = FontWeight.Bold)
-                }
-            } else {
-                TextButton(onClick = onLogout) {
-                    Text("Log out", color = Color(0xFF795548), fontWeight = FontWeight.Bold)
-                }
-            }
-        }
+fun DonationProgressBar(current: Int, goal: Int) {
+    val progress = current.toFloat() / goal
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Text(
+            text = "현재 모금액: ${current}원 / ${goal}원",
+            color = Color(0xFF795548),
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        LinearProgressIndicator(
+            progress = progress.coerceIn(0f, 1f),
+            color = Color(0xFF795548),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+        )
     }
 }
 
@@ -158,16 +168,18 @@ fun UserProfile(name: String) {
         modifier = Modifier.padding(vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = Icons.Default.AccountCircle, contentDescription = "Profile", tint = Color(0xFF795548), modifier = Modifier.size(50.dp))
+        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = Color(0xFF795548), modifier = Modifier.size(50.dp))
         Text(text = name, fontSize = 18.sp, color = Color(0xFF795548), modifier = Modifier.padding(start = 10.dp))
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun AdGrid() {
+fun AdGrid(viewModel: MainViewModel) {
     val adList = List(4) { it }
+
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(adList) { _ ->
+        items(adList) { index ->
             Box(
                 modifier = Modifier
                     .padding(5.dp)
@@ -176,7 +188,7 @@ fun AdGrid() {
                     .height(100.dp)
                     .padding(10.dp)
             ) {
-                AdBanner()
+                AdBanner(viewModel, tag = "home-banner-$index")
             }
         }
     }
@@ -192,13 +204,13 @@ fun NavigationBar() {
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         IconButton(onClick = { /* Navigate to home */ }) {
-            Icon(imageVector = Icons.Default.Home, contentDescription = "Home", tint = Color(0xFF795548))
+            Icon(Icons.Default.Home, contentDescription = "Home", tint = Color(0xFF795548))
         }
         IconButton(onClick = { /* Navigate to tabs */ }) {
-            Icon(imageVector = Icons.Default.MoreHoriz, contentDescription = "Tabs", tint = Color(0xFF795548))
+            Icon(Icons.Default.MoreHoriz, contentDescription = "Tabs", tint = Color(0xFF795548))
         }
         IconButton(onClick = { /* Navigate to settings */ }) {
-            Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = Color(0xFF795548))
+            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color(0xFF795548))
         }
     }
-}}
+}

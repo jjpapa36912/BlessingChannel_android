@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"
@@ -28,6 +29,11 @@
 <!--        <activity-->
 <!--            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"-->
 <!--            android:exported="true" />-->
+
+
+        <activity android:name=".ui.mypage.MyPageActivity" />
+        <activity android:name=".ui.reward.RewardActivity" />
+
 
         <!-- ✅ MainActivity에 intent-filter 추가 -->
         <activity

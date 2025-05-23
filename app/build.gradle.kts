@@ -91,6 +91,7 @@ dependencies {
     implementation ("androidx.compose.material:material-icons-extended:1.6.1")
     implementation ("com.google.android.gms:play-services-ads:23.0.0")
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation ("io.coil-kt:coil-compose:2.4.0") // Coil for 이미지 로딩
 
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.21")
