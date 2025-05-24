@@ -66,6 +66,8 @@
 
         <!-- ✅ 메인 화면 -->
         <activity android:name=".MainScreenActivity" />
+        <activity android:name=".ui.donation.DonationUsageActivity" />
+
 
     </application>
 

@@ -44,6 +44,8 @@ fun MyPageScreen(
 ) {
     val user by viewModel.user.collectAsState()
     val point by viewModel.point.collectAsState()
+    val donation by viewModel.totalDonation.collectAsState()
+
     val ranking by viewModel.rankingList.collectAsState()
     val redeemHistory by viewModel.redeemHistory.collectAsState()
     val profileImageUri = viewModel.profileImageUri.collectAsState()
@@ -59,6 +61,7 @@ fun MyPageScreen(
     val canRedeem = point >= 100
 
     LaunchedEffect(Unit) {
+        viewModel.fetchUserSummary(user?.name ?: "")
         viewModel.fetchRanking()
         viewModel.loadProfileImageUri(context)
         viewModel.fetchRedeemHistoryFromServer()
@@ -174,6 +177,8 @@ fun MyPageScreen(
             )
 
             Text("현재 포인트: ${point}P", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("누적 수익: ${donation}원", fontSize = 16.sp)
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Spacer(modifier = Modifier.height(12.dp)) // ← 약간의 여백 추가

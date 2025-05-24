@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import com.blessing.channel.components.AdBanner
+import com.blessing.channel.ui.donation.DonationUsageActivity
 import com.blessing.channel.ui.mypage.MyPageActivity
 import com.blessing.channel.ui.theme.AppTheme
 import com.blessing.channel.viewmodel.MainViewModel
@@ -40,10 +42,6 @@ class MainScreenActivity : ComponentActivity() {
 
         val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         viewModel.setUserIfEmpty(userName)
-        // 🔄 기존 로컬 SharedPreferences 호출 제거
-        // viewModel.loadTotalDonation(this)
-
-        // ✅ 서버에서 총 모금액 가져오기
         viewModel.fetchTotalDonationFromServer()
 
         setContent {
@@ -93,6 +91,10 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                     context.startActivity(intent)
                 })
+                DropdownMenuItem(text = { Text("모금 사용처") }, onClick = {
+                    expanded = false
+                    context.startActivity(Intent(context, DonationUsageActivity::class.java))
+                })
                 DropdownMenuItem(text = { Text("로그아웃") }, onClick = {
                     expanded = false
                     viewModel.logout()
@@ -100,6 +102,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     (context as? Activity)?.finish()
                 })
             }
+
         }
 
         DonationProgressBar(
@@ -126,16 +129,38 @@ fun MainScreen(viewModel: MainViewModel) {
             Log.d("MainScreen", "User is null, not showing RewardedAd Button")
         }
 
-        AdGrid(viewModel)
+        val adList = List(4) { it }
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(adList) { index ->
+                Box(
+                    modifier = Modifier
+                        .padding(5.dp)
+                        .background(Color(0xFFFFF8D1))
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .padding(10.dp)
+                ) {
+                    AdBanner(viewModel, tag = "home-banner-$index")
+                }
+            }
 
-        Text(
-            text = "Thank you!",
-            color = Color(0xFF795548),
-            fontSize = 16.sp,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "광고 한 편, 당신에게 유익함을, 아이들에게는 따뜻함을 전합니다.",
+                    color = Color(0xFF6B3E26),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
 
-        NavigationBar()
+            item {
+                NavigationBar()
+            }
+        }
     }
 }
 
@@ -169,27 +194,6 @@ fun UserProfile(name: String) {
     ) {
         Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = Color(0xFF795548), modifier = Modifier.size(50.dp))
         Text(text = name, fontSize = 18.sp, color = Color(0xFF795548), modifier = Modifier.padding(start = 10.dp))
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun AdGrid(viewModel: MainViewModel) {
-    val adList = List(4) { it }
-
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(adList) { index ->
-            Box(
-                modifier = Modifier
-                    .padding(5.dp)
-                    .background(Color(0xFFFFF8D1))
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .padding(10.dp)
-            ) {
-                AdBanner(viewModel, tag = "home-banner-$index")
-            }
-        }
     }
 }
 
