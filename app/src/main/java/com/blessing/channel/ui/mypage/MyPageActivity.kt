@@ -31,6 +31,7 @@ class MyPageActivity : ComponentActivity() {
         // ✅ ViewModel을 Activity Scope로 획득
         val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         viewModel.setUser(userName)
+        viewModel.fetchUserSummary(userName) // ✅ 이걸 바로 추가 또는 확인
 
         setContent {
             AppTheme {

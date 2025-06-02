@@ -37,12 +37,19 @@ class MainScreenActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val userName = intent.getStringExtra("name") ?: ""
         Log.d("MainScreenActivity", "userName from intent: $userName")
 
         val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         viewModel.setUserIfEmpty(userName)
-        viewModel.fetchTotalDonationFromServer()
+
+        // ✅ 서버에 유저 등록 → 이후 summary fetch
+        viewModel.setUserIfEmpty(userName)
+        viewModel.registerUserIfNotExists(userName)
+        viewModel.fetchGlobalDonation() // 🔁 추가
+        viewModel.fetchUserSummary(userName)         // 👉 개인별 요약 정보
+//        viewModel.fetchTotalDonationFromServer()     // ✅ 전체 기부액 (모든 유저 합산)
 
         setContent {
             AppTheme {
@@ -55,6 +62,8 @@ class MainScreenActivity : ComponentActivity() {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
+    val globalDonation by viewModel.globalDonation.collectAsState()
+
     val user by viewModel.user.collectAsState()
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
@@ -106,7 +115,7 @@ fun MainScreen(viewModel: MainViewModel) {
         }
 
         DonationProgressBar(
-            current = donation,
+            current = globalDonation,
             goal = 1_000_000
         )
 

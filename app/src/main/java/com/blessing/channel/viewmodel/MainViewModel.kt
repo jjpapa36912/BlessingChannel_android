@@ -62,8 +62,12 @@ class MainViewModel : ViewModel() {
 
     private var rewardedAd: RewardedAd? = null
 
-    private val _totalDonation = MutableStateFlow(0)
+    private val _totalDonation = MutableStateFlow(0) // 개인 누적 기부액
     val totalDonation: StateFlow<Int> = _totalDonation
+
+    private val _globalDonation = MutableStateFlow(0) // 전체 유저 누적 기부액
+    val globalDonation: StateFlow<Int> = _globalDonation
+
 
     fun fetchTotalDonationFromServer() {
         viewModelScope.launch {
@@ -80,16 +84,58 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+    fun registerUserIfNotExists(userId: String) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val json = JSONObject().apply {
+                        put("point", 0)
+                    }
+                    val body = json.toString().toRequestBody("application/json".toMediaType())
+                    val request = Request.Builder()
+                        .url("$SERVER_URL/api/users/$userId/summary")
+                        .post(body)
+                        .build()
+                    OkHttpClient().newCall(request).execute()
+                }
+            } catch (e: Exception) {
+                Log.e("UserRegister", "서버 등록 실패", e)
+            }
+        }
+    }
+
+    fun fetchTotalPoints() {
+        viewModelScope.launch {
+            try {
+                val totalPoints = withContext(Dispatchers.IO) {
+                    val request = Request.Builder()
+                        .url("$SERVER_URL/api/ads/points/total")
+                        .get().build()
+                    val response = OkHttpClient().newCall(request).execute()
+                    val body = response.body?.string() ?: return@withContext 0
+                    JSONObject(body).optInt("totalPoints", 0)
+                }
+                Log.d("Points", "전체 포인트: $totalPoints")
+            } catch (e: Exception) {
+                Log.e("Points", "조회 실패", e)
+            }
+        }
+    }
 
     fun fetchUserSummary(userId: String) {
         viewModelScope.launch {
             try {
                 val (p, d) = withContext(Dispatchers.IO) {
-                    val request = Request.Builder().url("$SERVER_URL/api/users/$userId/summary").get().build()
+                    val request = Request.Builder()
+                        .url("$SERVER_URL/api/users/name/$userId/summary")
+                        .get()
+                        .build()
                     val response = OkHttpClient().newCall(request).execute()
                     val body = response.body?.string() ?: return@withContext 0 to 0
                     val json = JSONObject(body)
-                    json.getInt("point") to json.getInt("totalDonation")
+                    val point = json.optInt("totalPoint", 0)
+                    val donation = json.optInt("totalDonation", 0)
+                    point to donation
                 }
                 _point.value = p
                 _totalDonation.value = d
@@ -98,6 +144,67 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    fun fetchGlobalDonation() {
+        viewModelScope.launch {
+            try {
+                val donation = withContext(Dispatchers.IO) {
+                    val request = Request.Builder()
+                        .url("$SERVER_URL/api/users/total-donation") // ✅ 수정된 엔드포인트
+                        .get()
+                        .build()
+                    val response = OkHttpClient().newCall(request).execute()
+                    val body = response.body?.string() ?: return@withContext 0
+                    JSONObject(body).optInt("totalDonation", 0)
+                }
+                _globalDonation.value = donation
+            } catch (e: Exception) {
+                Log.e("GlobalDonationFetch", "전체 기부금 조회 실패", e)
+            }
+        }
+    }
+
+
+
+
+
+    //    fun fetchUserSummary(userId: String) {
+//        viewModelScope.launch {
+//            try {
+//                val (p, d) = withContext(Dispatchers.IO) {
+//                    val request = Request.Builder().url("$SERVER_URL/api/users/$userId/summary").get().build()
+//                    val response = OkHttpClient().newCall(request).execute()
+//                    val body = response.body?.string() ?: return@withContext 0 to 0
+//                    val json = JSONObject(body)
+//                    json.getInt("point") to json.getInt("totalDonation")
+//                }
+//                _point.value = p
+//                _totalDonation.value = d
+//            } catch (e: Exception) {
+//                Log.e("UserSummary", "조회 실패", e)
+//            }
+//        }
+//    }
+fun saveUserSummaryToServer(userId: String) {
+    viewModelScope.launch {
+        try {
+            withContext(Dispatchers.IO) {
+                val json = JSONObject().apply {
+                    put("point", _totalDonation.value / 10) // ✅ 항상 모금액 기준
+                    put("totalDonation", _totalDonation.value)
+                }
+                val body = json.toString().toRequestBody("application/json".toMediaType())
+                val request = Request.Builder()
+                    .url("$SERVER_URL/api/users/$userId/summary")
+                    .post(body)
+                    .build()
+                OkHttpClient().newCall(request).execute()
+            }
+        } catch (e: Exception) {
+            Log.e("UserSummarySave", "서버 저장 실패", e)
+        }
+    }
+}
 
     fun fetchRedeemHistoryFromServer() {
         viewModelScope.launch {
@@ -282,13 +389,11 @@ class MainViewModel : ViewModel() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
                     rewardedAd?.show(context as Activity) { rewardItem: RewardItem ->
-                        _rewardedEarnedAmount.value = (_rewardedEarnedAmount.value ?: 0) + rewardItem.amount
-                        _point.value += 10
-                        _totalDonation.value += 20
-                        saveTotalDonation(context)
-                        Log.d("RewardAd", "보상 수령: ${rewardItem.amount}, 총 기부액: ${_totalDonation.value}")
+                        val fixedAmount = 10 // ✅ 강제 보상 금액
+                        claimReward(userId, fixedAmount, context)
+                        fetchUserSummary(userId)
                         recordRewardUseToday(context)
-                        claimReward(userId, rewardItem.amount, context)
+                        Log.d("RewardAd", "보상 수령: $fixedAmount")
                     }
                 }
 
@@ -298,17 +403,27 @@ class MainViewModel : ViewModel() {
             })
     }
 
+//    fun isRewardAllowedToday(context: Context): Boolean {
+//        val prefs = context.getSharedPreferences("reward_prefs", Context.MODE_PRIVATE)
+//        val lastDate = prefs.getString("last_reward_date", null)
+//        return lastDate != LocalDate.now().toString()
+//    }
+//
+//    fun recordRewardUseToday(context: Context) {
+//        val prefs = context.getSharedPreferences("reward_prefs", Context.MODE_PRIVATE)
+//        prefs.edit().putString("last_reward_date", LocalDate.now().toString()).apply()
+//    }
+
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun recordBannerView(tag: String, context: Context) {
-        if (!isBannerViewTodayAllowed(tag, context)) return
-        Log.d("BannerAd", "recordBannerView called for $tag")
         if (!isBannerViewTodayAllowed(tag, context)) {
             Log.d("BannerAd", "광고 이미 노출됨: $tag")
             return
         }
 
         _bannerViewCount.value += 1
-        _point.value += 1
+        _point.value = _totalDonation.value / 10
         _totalDonation.value += 1
         saveTotalDonation(context)
 
@@ -333,9 +448,21 @@ class MainViewModel : ViewModel() {
         prefs.edit().putInt(todayKey, count + 1).apply()
     }
 
+//    fun isRewardAllowedToday(context: Context): Boolean {
+//        val prefs = context.getSharedPreferences("reward_prefs", Context.MODE_PRIVATE)
+//        val lastDate = prefs.getString("last_reward_date", null)
+//        return lastDate != LocalDate.now().toString()
+//    }
+//
+//    fun recordRewardUseToday(context: Context) {
+//        val prefs = context.getSharedPreferences("reward_prefs", Context.MODE_PRIVATE)
+//        prefs.edit().putString("last_reward_date", LocalDate.now().toString()).apply()
+//    }
+
 
     companion object {
-        const val SERVER_URL = "http://3.36.86.32:8080"
+//        const val SERVER_URL = "http://3.36.86.32:8080"
+            const val SERVER_URL = "http://10.0.2.2:8080"
     }
 }
 
