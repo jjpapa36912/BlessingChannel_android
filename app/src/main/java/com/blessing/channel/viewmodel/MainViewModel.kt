@@ -17,6 +17,8 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.rewarded.RewardItem
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.common.reflect.TypeToken
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -41,8 +43,12 @@ class MainViewModel : ViewModel() {
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user
     val ranking = MutableStateFlow<List<RankingUser>>(emptyList())
-    private val _rankingList = MutableStateFlow<List<RankedUser>>(emptyList())
-    val rankingList: StateFlow<List<RankedUser>> = _rankingList
+//    private val _rankingList = MutableStateFlow<List<RankedUser>>(emptyList())
+    private val _rankingList = MutableStateFlow<List<RankingUser>>(emptyList())
+    val rankingList: StateFlow<List<RankingUser>> = _rankingList
+
+
+//    val rankingList: StateFlow<List<RankedUser>> = _rankingList
 
 
     private val _profileImageUri = MutableStateFlow<String?>(null)
@@ -274,22 +280,29 @@ fun saveUserSummaryToServer(userId: String) {
     fun fetchRanking() {
         viewModelScope.launch {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    val request = Request.Builder().url("$SERVER_URL/ranking").get().build()
+                val rankingList = withContext(Dispatchers.IO) {
+                    val request = Request.Builder()
+                        .url("$SERVER_URL/api/users/rank/top3")
+                        .get()
+                        .build()
                     val response = OkHttpClient().newCall(request).execute()
                     val jsonArray = JSONArray(response.body?.string() ?: "[]")
                     List(jsonArray.length()) { i ->
                         val obj = jsonArray.getJSONObject(i)
-                        RankingUser(obj.getString("name"), obj.getInt("point"))
+                        RankingUser(
+                            name = obj.getString("name"),
+                            point = obj.getInt("point")
+                        )
                     }
                 }
-                ranking.value = result
+
+                _rankingList.value = rankingList
+
             } catch (e: Exception) {
-                Log.e("Ranking", "불러오기 실패", e)
+                Log.e("Ranking", "랭킹 불러오기 실패: ${e.message}")
             }
         }
     }
-
     private fun saveTotalDonation(context: Context) {
         context.getSharedPreferences("donation_prefs", Context.MODE_PRIVATE)
             .edit().putInt("total_donation", _totalDonation.value).apply()
@@ -361,34 +374,34 @@ fun saveUserSummaryToServer(userId: String) {
         }
     }
 
-    fun claimReward(userId: String, amount: Int, context: Context) {
-        viewModelScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val json = JSONObject().apply {
-                        put("userId", userId)
-                        put("amount", amount)
-                    }
-                    val body = json.toString().toRequestBody("application/json".toMediaType())
-                    val request = Request.Builder()
-                        .url("$SERVER_URL/reward/claim")
-                        .post(body)
-                        .build()
-                    OkHttpClient().newCall(request).execute()
-                    Toast.makeText(context, "코인이 지급되었습니다!", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Log.e("RewardAd", "보상 처리 실패: ${e.message}")
-            }
-        }
-    }
-    init {
-        _rankingList.value = listOf(
-            RankedUser("사용자1", 250),
-            RankedUser("나", 200),
-            RankedUser("사용자2", 150)
-        )
-    }
+//    fun claimReward(userId: String, amount: Int, context: Context) {
+//        viewModelScope.launch {
+//            try {
+//                withContext(Dispatchers.IO) {
+//                    val json = JSONObject().apply {
+//                        put("userId", userId)
+//                        put("amount", amount)
+//                    }
+//                    val body = json.toString().toRequestBody("application/json".toMediaType())
+//                    val request = Request.Builder()
+//                        .url("$SERVER_URL/reward/claim")
+//                        .post(body)
+//                        .build()
+//                    OkHttpClient().newCall(request).execute()
+//                    Toast.makeText(context, "코인이 지급되었습니다!", Toast.LENGTH_SHORT).show()
+//                }
+//            } catch (e: Exception) {
+//                Log.e("RewardAd", "보상 처리 실패: ${e.message}")
+//            }
+//        }
+//    }
+//    init {
+//        rankingList.value = listOf(
+//            RankedUser("사용자1", 250),
+//            RankedUser("나", 200),
+//            RankedUser("사용자2", 150)
+//        )
+//    }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun isBannerViewTodayAllowed(tag: String, context: Context): Boolean {
         val prefs = context.getSharedPreferences("banner_view_prefs", Context.MODE_PRIVATE)

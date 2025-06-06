@@ -67,6 +67,7 @@ fun MyPageScreen(
         viewModel.fetchRedeemHistoryFromServer()
 
 
+
     }
 
     Scaffold(
@@ -177,11 +178,11 @@ fun MyPageScreen(
             )
 
             Text("현재 포인트: ${point}P", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text("누적 수익: ${donation}원", fontSize = 16.sp)
 
             Spacer(modifier = Modifier.height(8.dp))
-
             Spacer(modifier = Modifier.height(12.dp)) // ← 약간의 여백 추가
+            RankingBoard(viewModel = viewModel) // 🔥 랭킹 보드 삽입 위치
+
 
             Button(
                 onClick = {

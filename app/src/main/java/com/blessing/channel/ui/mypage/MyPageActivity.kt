@@ -32,10 +32,11 @@ class MyPageActivity : ComponentActivity() {
         val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         viewModel.setUser(userName)
         viewModel.fetchUserSummary(userName) // ✅ 이걸 바로 추가 또는 확인
+        viewModel.fetchRanking()              // ✅ 반드시 여기서 호출
 
         setContent {
             AppTheme {
-                val viewModel: MainViewModel = viewModel()
+//                val viewModel: MainViewModel = viewModel()
 
                 // ✅ 유저 정보 ViewModel에 전달
                 LaunchedEffect(Unit) {
