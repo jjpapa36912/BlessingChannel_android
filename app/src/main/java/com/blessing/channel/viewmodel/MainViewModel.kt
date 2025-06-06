@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blessing.channel.BuildConfig
@@ -33,6 +34,8 @@ import java.time.LocalDate
 import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.State
+
 
 
 data class User(val name: String, val email: String)
@@ -46,6 +49,13 @@ class MainViewModel : ViewModel() {
 //    private val _rankingList = MutableStateFlow<List<RankedUser>>(emptyList())
     private val _rankingList = MutableStateFlow<List<RankingUser>>(emptyList())
     val rankingList: StateFlow<List<RankingUser>> = _rankingList
+
+    private val _userName = mutableStateOf("게스트")
+    val userName: State<String> = _userName
+
+    fun setUserName(name: String) {
+        _userName.value = name
+    }
 
 
 //    val rankingList: StateFlow<List<RankedUser>> = _rankingList

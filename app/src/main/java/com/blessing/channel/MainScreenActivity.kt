@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import com.blessing.channel.components.AdBanner
+import com.blessing.channel.ui.board.BoardActivity
 import com.blessing.channel.ui.donation.DonationUsageActivity
 import com.blessing.channel.ui.mypage.MyPageActivity
 import com.blessing.channel.ui.theme.AppTheme
@@ -41,10 +42,11 @@ class MainScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userName = intent.getStringExtra("name") ?: ""
+        val userName = intent.getStringExtra("username") ?: ""
         Log.d("MainScreenActivity", "userName from intent: $userName")
 
         val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        viewModel.setUserName(userName)
         viewModel.setUserIfEmpty(userName)
 
         // ✅ 서버에 유저 등록 → 이후 summary fetch
@@ -69,12 +71,14 @@ class MainScreenActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val globalDonation by viewModel.globalDonation.collectAsState()
+    val userName by viewModel.userName
 
     val user by viewModel.user.collectAsState()
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
 
     val donation by viewModel.totalDonation.collectAsState()
+
 
     Log.d("MainScreen", "User state: $user")
 // ✅ 최초 유저 or 오늘 처음 진입한 유저만 4원 적립
@@ -109,7 +113,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color(0xFF6B3E26))
             }
 
-            Text(text = "${user?.name ?: "게스트"}님 환영합니다", fontWeight = FontWeight.Bold)
+            Text(text = "${userName}님 환영합니다", fontWeight = FontWeight.Bold)
 
             DropdownMenu(
                 expanded = expanded,
@@ -178,7 +182,7 @@ fun MainScreen(viewModel: MainViewModel) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "광고 한 편, 당신에게 유익함을, 아이들에게는 따뜻함을 전합니다.",
+                    text = "필요한 정보는 당신에게, 따뜻한 나눔은 아이들에게.",
                     color = Color(0xFF6B3E26),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
@@ -189,7 +193,7 @@ fun MainScreen(viewModel: MainViewModel) {
             }
 
             item {
-                NavigationBar()
+                NavigationBar(userName)
             }
         }
     }
@@ -228,23 +232,44 @@ fun UserProfile(name: String) {
     }
 }
 
+//@Composable
+//fun NavigationBar() {
+//    Row(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(vertical = 10.dp)
+//            .background(Color(0xFFFFE082)),
+//        horizontalArrangement = Arrangement.SpaceAround
+//    ) {
+//        IconButton(onClick = { /* Navigate to home */ }) {
+//            Icon(Icons.Default.Home, contentDescription = "Home", tint = Color(0xFF795548))
+//        }
+//        IconButton(onClick = { /* Navigate to tabs */ }) {
+//            Icon(Icons.Default.MoreHoriz, contentDescription = "Tabs", tint = Color(0xFF795548))
+//        }
+//        IconButton(onClick = { /* Navigate to settings */ }) {
+//            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color(0xFF795548))
+//        }
+//    }
+//}
 @Composable
-fun NavigationBar() {
+fun NavigationBar(name: String) {
+    val context = LocalContext.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 10.dp)
             .background(Color(0xFFFFE082)),
-        horizontalArrangement = Arrangement.SpaceAround
+        horizontalArrangement = Arrangement.Center // 가운데 하나만 정렬
     ) {
-        IconButton(onClick = { /* Navigate to home */ }) {
-            Icon(Icons.Default.Home, contentDescription = "Home", tint = Color(0xFF795548))
+        IconButton(onClick = {
+            val intent = Intent(context, BoardActivity::class.java)
+            intent.putExtra("username", name)
+            context.startActivity(intent)
+        }) {
+            Icon(Icons.Default.Chat, contentDescription = "게시판", tint = Color(0xFF795548))
         }
-        IconButton(onClick = { /* Navigate to tabs */ }) {
-            Icon(Icons.Default.MoreHoriz, contentDescription = "Tabs", tint = Color(0xFF795548))
-        }
-        IconButton(onClick = { /* Navigate to settings */ }) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color(0xFF795548))
-        }
+
     }
 }

@@ -31,6 +31,7 @@
         <!-- ✅ 마이페이지 & 보상 액티비티 -->
         <activity android:name=".ui.mypage.MyPageActivity" />
         <activity android:name=".ui.reward.RewardActivity" />
+        <activity android:name=".ui.board.BoardActivity" />
 
         <!-- ✅ 카카오 로그인 콜백 처리 -->
         <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"

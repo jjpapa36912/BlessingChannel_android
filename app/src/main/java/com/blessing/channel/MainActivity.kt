@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         Log.d("MainActivity", "🔥 MainActivity 시작됨")
         // ✅ AdMob 초기화
         com.google.android.gms.ads.MobileAds.initialize(this)
@@ -70,7 +71,7 @@ class MainActivity : ComponentActivity() {
         googleLoginService = GoogleLoginService(this) { account ->
             account?.let {
                 val intent = Intent(this, MainScreenActivity::class.java).apply {
-                    putExtra("name", it.displayName ?: "")
+                    putExtra("username", it.displayName ?: "")
                     putExtra("email", it.email ?: "")
                 }
                 Log.i("GoogleLogin", "구글 로그인 성공: ${it.email}")
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
         kakaoLoginService = KakaoLoginService(this) { name ->
             val intent = Intent(this, MainScreenActivity::class.java).apply {
-                putExtra("name", name)
+                putExtra("username", name)
             }
             startActivity(intent)
             finish()
@@ -97,7 +98,7 @@ class MainActivity : ComponentActivity() {
 
         naverLoginService = NaverLoginService(this) { name ->
             val intent = Intent(this, MainScreenActivity::class.java).apply {
-                putExtra("name", name)
+                putExtra("username", name)
             }
             startActivity(intent)
             finish()
@@ -124,7 +125,7 @@ class MainActivity : ComponentActivity() {
                 val viewModel: MainViewModel = viewModel()
                 val context = LocalContext.current
 
-                val name = intent.getStringExtra("name") ?: ""
+                val name = intent.getStringExtra("username") ?: ""
                 val email = intent.getStringExtra("email") ?: ""
 
                 LaunchedEffect(Unit) {
