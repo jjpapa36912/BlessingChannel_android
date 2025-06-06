@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:554728490287:android:ae8e1e1ebf6f5c05908dda",
         "android_client_info": {
-          "package_name": "com.blessing.channel"
+          "package_name": "com.blessing.channel.jjpapa"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "554728490287-33ll0bai03ingidakv00o9baifpfanba.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.blessing.channel",
+            "package_name": "com.blessing.channel.jjpapa",
             "certificate_hash": "6459ef06af2a85e09e9a099aa1f25d3c72f0236a"
           }
         },

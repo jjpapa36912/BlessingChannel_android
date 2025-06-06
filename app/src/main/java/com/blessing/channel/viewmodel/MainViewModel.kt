@@ -35,7 +35,7 @@ import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.State
-
+import com.blessing.channel.common.Constants
 
 
 data class User(val name: String, val email: String)
@@ -89,7 +89,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val donation = withContext(Dispatchers.IO) {
-                    val request = Request.Builder().url("$SERVER_URL/api/ads/total").get().build()
+                    val request = Request.Builder().url("${Constants.SERVER_URL}/api/ads/total").get().build()
                     val response = OkHttpClient().newCall(request).execute()
                     val body = response.body?.string() ?: return@withContext 0
                     JSONObject(body).getInt("totalDonation")
@@ -109,7 +109,7 @@ class MainViewModel : ViewModel() {
                     }
                     val body = json.toString().toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
-                        .url("$SERVER_URL/api/users/$userId/summary")
+                        .url("${Constants.SERVER_URL}/api/users/$userId/summary")
                         .post(body)
                         .build()
                     OkHttpClient().newCall(request).execute()
@@ -125,7 +125,7 @@ class MainViewModel : ViewModel() {
             try {
                 val totalPoints = withContext(Dispatchers.IO) {
                     val request = Request.Builder()
-                        .url("$SERVER_URL/api/ads/points/total")
+                        .url("${Constants.SERVER_URL}/api/ads/points/total")
                         .get().build()
                     val response = OkHttpClient().newCall(request).execute()
                     val body = response.body?.string() ?: return@withContext 0
@@ -143,7 +143,7 @@ class MainViewModel : ViewModel() {
             try {
                 val (p, d) = withContext(Dispatchers.IO) {
                     val request = Request.Builder()
-                        .url("$SERVER_URL/api/users/name/$userId/summary")
+                        .url("${Constants.SERVER_URL}/api/users/name/$userId/summary")
                         .get()
                         .build()
                     val response = OkHttpClient().newCall(request).execute()
@@ -166,7 +166,7 @@ class MainViewModel : ViewModel() {
             try {
                 val donation = withContext(Dispatchers.IO) {
                     val request = Request.Builder()
-                        .url("$SERVER_URL/api/users/total-donation") // ✅ 수정된 엔드포인트
+                        .url("${Constants.SERVER_URL}/api/users/total-donation") // ✅ 수정된 엔드포인트
                         .get()
                         .build()
                     val response = OkHttpClient().newCall(request).execute()
@@ -211,7 +211,7 @@ fun saveUserSummaryToServer(userId: String) {
                 }
                 val body = json.toString().toRequestBody("application/json".toMediaType())
                 val request = Request.Builder()
-                    .url("$SERVER_URL/api/users/$userId/summary")
+                    .url("${Constants.SERVER_URL}/api/users/$userId/summary")
                     .post(body)
                     .build()
                 OkHttpClient().newCall(request).execute()
@@ -227,7 +227,7 @@ fun saveUserSummaryToServer(userId: String) {
             try {
                 val result = withContext(Dispatchers.IO) {
                     val userId = user.value?.name ?: return@withContext emptyList()
-                    val url = "$SERVER_URL/reward/history?userId=$userId"
+                    val url = "${Constants.SERVER_URL}/reward/history?userId=$userId"
                     val request = Request.Builder().url(url).get().build()
                     val response = OkHttpClient().newCall(request).execute()
                     val jsonArray = JSONArray(response.body?.string() ?: "[]")
@@ -249,7 +249,7 @@ fun saveUserSummaryToServer(userId: String) {
                     }
                     val body = json.toString().toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
-                        .url("$SERVER_URL/api/users/summary")
+                        .url("${Constants.SERVER_URL}/api/users/summary")
                         .post(body)
                         .build()
                     val response = OkHttpClient().newCall(request).execute()
@@ -278,7 +278,7 @@ fun saveUserSummaryToServer(userId: String) {
                         put("entry", entry)
                     }
                     val body = json.toString().toRequestBody("application/json".toMediaType())
-                    val request = Request.Builder().url("$SERVER_URL/reward/history").post(body).build()
+                    val request = Request.Builder().url("${Constants.SERVER_URL}/reward/history").post(body).build()
                     OkHttpClient().newCall(request).execute()
                 }
             } catch (e: Exception) {
@@ -292,7 +292,7 @@ fun saveUserSummaryToServer(userId: String) {
             try {
                 val rankingList = withContext(Dispatchers.IO) {
                     val request = Request.Builder()
-                        .url("$SERVER_URL/api/users/rank/top3")
+                        .url("${Constants.SERVER_URL}/api/users/rank/top3")
                         .get()
                         .build()
                     val response = OkHttpClient().newCall(request).execute()
@@ -373,7 +373,7 @@ fun saveUserSummaryToServer(userId: String) {
                     }
                     val body = json.toString().toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
-                        .url("$SERVER_URL/ads/report?section=$tag")
+                        .url("${Constants.SERVER_URL}/ads/report?section=$tag")
                         .post(body)
                         .build()
                     OkHttpClient().newCall(request).execute()
@@ -429,7 +429,7 @@ fun saveUserSummaryToServer(userId: String) {
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    val requestUrl = "$SERVER_URL/api/users/$userId/reward?amount=20&adType=rewarded"
+                    val requestUrl = "${Constants.SERVER_URL}/api/users/$userId/reward?amount=20&adType=rewarded"
                     val request = Request.Builder()
                         .url(requestUrl)
                         .post("".toRequestBody("application/json".toMediaType()))

@@ -32,7 +32,12 @@ val kakaoKey = localProperties.getProperty("KAKAO_NATIVE_KEY")
 //
 //val naverClientSecret = project.findProperty("NAVER_CLIENT_SECRET") as? String
 //    ?: throw GradleException("NAVER_CLIENT_SECRET is missing in local.properties")
-
+val keystoreProperties = Properties().apply {
+    val keystoreFile = rootProject.file("keystore.properties")
+    if (keystoreFile.exists()) {
+        load(FileInputStream(keystoreFile))
+    }
+}
 android {
     namespace = "com.blessing.channel"
     compileSdk = 35
@@ -41,10 +46,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.blessing.channel"
+        applicationId = "com.blessing.channel.jjpapa"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
 
         buildConfigField("String", "NAVER_CLIENT_ID", "\"$naverClientId\"")
