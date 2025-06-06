@@ -224,6 +224,35 @@ fun saveUserSummaryToServer(userId: String) {
         }
     }
 
+    fun registerUserAndFetchSummary(userId: String) {
+        viewModelScope.launch {
+            try {
+                val (point, donation) = withContext(Dispatchers.IO) {
+                    val json = JSONObject().apply {
+                        put("userId", userId)
+                    }
+                    val body = json.toString().toRequestBody("application/json".toMediaType())
+                    val request = Request.Builder()
+                        .url("$SERVER_URL/api/users/summary")
+                        .post(body)
+                        .build()
+                    val response = OkHttpClient().newCall(request).execute()
+                    val responseBody = response.body?.string() ?: return@withContext 0 to 0
+                    val jsonRes = JSONObject(responseBody)
+                    val pt = jsonRes.optInt("totalPoint", 0)
+                    val dn = jsonRes.optInt("totalDonation", 0)
+                    pt to dn
+                }
+                _point.value = point
+                _totalDonation.value = donation
+                Log.d("UserInit", "등록 및 요약 완료: $point P / $donation P")
+            } catch (e: Exception) {
+                Log.e("UserInit", "요약 실패: ${e.message}")
+            }
+        }
+    }
+
+
     fun saveRedeemToServer(userId: String, entry: String) {
         viewModelScope.launch {
             try {
@@ -373,27 +402,47 @@ fun saveUserSummaryToServer(userId: String) {
         val todayKey = "$tag:${LocalDate.now()}"
         prefs.edit().putBoolean(todayKey, true).apply()
     }
+    fun reportRewardedAdWatched(userId: String, context: Context) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val requestUrl = "$SERVER_URL/api/users/$userId/reward?amount=20&adType=rewarded"
+                    val request = Request.Builder()
+                        .url(requestUrl)
+                        .post("".toRequestBody("application/json".toMediaType()))
+                        .build()
+                    OkHttpClient().newCall(request).execute()
+                }
+
+                Log.d("RewardAd", "✅ 보상형 광고 수익 보고 완료 (20 도네이션 적립)")
+                fetchGlobalDonation()
+                fetchUserSummary(userId) // 👉 개인 정보 다시 로드
+            } catch (e: Exception) {
+                Log.e("RewardAd", "❌ 보상형 광고 서버 전송 실패: ${e.message}")
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun tryRewardedAd(userId: String, context: Context) {
         if (!isRewardAllowedToday(context)) {
             Toast.makeText(context, "오늘의 보상형 광고 시청 한도를 초과했어요!", Toast.LENGTH_LONG).show()
             return
         }
+
         val adRequest = AdRequest.Builder().build()
         val adUnitId = if (BuildConfig.DEBUG)
-            "ca-app-pub-3940256099942544/5224354917" else "ca-app-pub-5025904812537246/9924147936"
+            "ca-app-pub-3940256099942544/5224354917"
+        else
+            "ca-app-pub-5025904812537246/8590884961"
 
-        RewardedAd.load(
-            context, adUnitId, adRequest,
+        RewardedAd.load(context, adUnitId, adRequest,
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
-                    rewardedAd?.show(context as Activity) { rewardItem: RewardItem ->
-                        val fixedAmount = 10 // ✅ 강제 보상 금액
-                        claimReward(userId, fixedAmount, context)
-                        fetchUserSummary(userId)
+                    rewardedAd?.show(context as Activity) { _: RewardItem ->
                         recordRewardUseToday(context)
-                        Log.d("RewardAd", "보상 수령: $fixedAmount")
+                        reportRewardedAdWatched(userId, context) // ✅ 서버에 20 도네이션 적립 요청
                     }
                 }
 

@@ -2,11 +2,13 @@
 package com.blessing.channel
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
+import com.blessing.channel.utils.hasRecordedToday
+import com.blessing.channel.utils.markRecordedToday
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
@@ -31,6 +33,7 @@ import com.blessing.channel.ui.donation.DonationUsageActivity
 import com.blessing.channel.ui.mypage.MyPageActivity
 import com.blessing.channel.ui.theme.AppTheme
 import com.blessing.channel.viewmodel.MainViewModel
+import kotlinx.coroutines.delay
 import java.util.*
 
 class MainScreenActivity : ComponentActivity() {
@@ -46,15 +49,18 @@ class MainScreenActivity : ComponentActivity() {
 
         // ✅ 서버에 유저 등록 → 이후 summary fetch
         viewModel.setUserIfEmpty(userName)
-        viewModel.registerUserIfNotExists(userName)
+        viewModel.registerUserAndFetchSummary(userName)
+
+//        viewModel.registerUserIfNotExists(userName)
         viewModel.fetchGlobalDonation() // 🔁 추가
-        viewModel.fetchUserSummary(userName)         // 👉 개인별 요약 정보
+//        viewModel.fetchUserSummary(userName)         // 👉 개인별 요약 정보
 //        viewModel.fetchTotalDonationFromServer()     // ✅ 전체 기부액 (모든 유저 합산)
 
         setContent {
             AppTheme {
                 MainScreen(viewModel = viewModel)
             }
+
         }
     }
 }
@@ -71,7 +77,23 @@ fun MainScreen(viewModel: MainViewModel) {
     val donation by viewModel.totalDonation.collectAsState()
 
     Log.d("MainScreen", "User state: $user")
+// ✅ 최초 유저 or 오늘 처음 진입한 유저만 4원 적립
+    LaunchedEffect(user) {
+        if (user?.name.isNullOrBlank()) return@LaunchedEffect
 
+        val isFirstLogin = donation == 0
+        val hasAlreadyRecordedToday = hasRecordedToday(context)
+
+        if (isFirstLogin || !hasAlreadyRecordedToday) {
+            listOf("home-banner-0", "home-banner-1", "home-banner-2", "home-banner-3").forEach { tag ->
+                viewModel.recordBannerView(tag, context)
+            }
+            delay(300)
+            viewModel.fetchGlobalDonation()
+            markRecordedToday(context)
+        }
+
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

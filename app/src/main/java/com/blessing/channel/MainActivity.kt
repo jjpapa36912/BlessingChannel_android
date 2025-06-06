@@ -1,6 +1,8 @@
 package com.blessing.channel
 
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,10 +11,12 @@ import com.blessing.channel.service.KakaoLoginService
 import com.blessing.channel.service.NaverLoginService
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import com.blessing.channel.utils.hasRecordedToday
+import com.blessing.channel.utils.markRecordedToday
 
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
@@ -25,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +38,8 @@ import com.blessing.channel.viewmodel.MainViewModel
 import com.kakao.sdk.auth.AuthCodeClient
 import com.kakao.sdk.common.KakaoSdk
 import com.navercorp.nid.NaverIdLoginSDK
+import kotlinx.coroutines.delay
+import java.time.LocalDate
 
 
 class MainActivity : ComponentActivity() {
@@ -41,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var kakaoLoginService: KakaoLoginService
     private lateinit var naverLoginService: NaverLoginService
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "🔥 MainActivity 시작됨")
@@ -114,14 +122,37 @@ class MainActivity : ComponentActivity() {
             BlessingChannelTheme {
                 Log.d("MainActivity", "🎨 Theme 블록 진입함") // 이거도 추가
                 val viewModel: MainViewModel = viewModel()
+                val context = LocalContext.current
 
                 val name = intent.getStringExtra("name") ?: ""
                 val email = intent.getStringExtra("email") ?: ""
 
                 LaunchedEffect(Unit) {
                     viewModel.setUser(name)
-                }
+                    viewModel.setUserIfEmpty(name)
+                    viewModel.registerUserIfNotExists(name)
+                    delay(500) // ⏱ 배너 4개 노출되도록 UI 렌더 시간 확보
 
+                    viewModel.fetchUserSummary(name)
+                    viewModel.fetchGlobalDonation()
+
+                    val isFirstLogin = viewModel.totalDonation.value == 0
+                    val hasAlreadyRecordedToday = hasRecordedToday(context)
+
+                    // ✅ 최초 유저 or 오늘 처음 진입한 유저만 배너 4개 처리
+                    if (isFirstLogin || !hasAlreadyRecordedToday) {
+                        listOf("home-top", "home-mid", "home-bottom", "home-footer").forEach { tag ->
+                            viewModel.recordBannerView(tag, context)
+                        }
+
+                        delay(500) // ✅ suspend 허용됨
+                        viewModel.saveUserSummaryToServer(name)
+                        viewModel.fetchGlobalDonation()
+
+                        markRecordedToday(context)
+                    }
+
+                }
 
                 LoginScreen(
                     onGoogleLoginClick = { googleLoginService.login() },
@@ -138,6 +169,7 @@ class MainActivity : ComponentActivity() {
 //    }
 
 }
+
 
 
 
