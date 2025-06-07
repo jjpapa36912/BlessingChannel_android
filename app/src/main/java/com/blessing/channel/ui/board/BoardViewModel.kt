@@ -228,10 +228,41 @@ fun addPost(title: String, content: String, author: String) {
 //    }
 
     fun deleteComment(postId: Long, comment: String) {
-        _posts.value = _posts.value.map {
-            if (it.id == postId) it.copy(comments = it.comments.filterNot { it == comment }) else it
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val author = comment.substringBefore(":").trim()
+                val content = comment.substringAfter(":").trim()
+
+                val url = URL("${Constants.SERVER_URL}/api/posts/board/$postId/comments")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "DELETE"
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/json")
+
+                val jsonBody = JSONObject().apply {
+                    put("author", author)
+                    put("content", content)
+                }.toString()
+
+                conn.outputStream.use { it.write(jsonBody.toByteArray()) }
+
+                if (conn.responseCode == 200) {
+                    withContext(Dispatchers.Main) {
+                        _posts.value = _posts.value.map {
+                            if (it.id == postId) it.copy(comments = it.comments.filterNot { it == comment }) else it
+                        }
+                        Log.d("Board", "댓글 삭제 성공")
+                    }
+                } else {
+                    Log.e("Board", "댓글 삭제 실패: ${conn.responseCode}")
+                }
+            } catch (e: Exception) {
+                Log.e("Board", "댓글 삭제 중 오류", e)
+            }
         }
     }
+
+
 
     fun getMyPosts(currentUser: String): List<BoardPost> {
         return posts.value.filter { it.author == currentUser }

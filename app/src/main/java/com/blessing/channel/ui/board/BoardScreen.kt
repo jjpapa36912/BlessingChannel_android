@@ -1,6 +1,7 @@
 package com.blessing.channel.ui.board
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,7 +31,7 @@ fun BoardScreen(currentUser: String, viewModel: BoardViewModel = viewModel() ) {
     val posts by viewModel.posts
     var showForm by remember { mutableStateOf(false) }
     var editingPost by remember { mutableStateOf<BoardPost?>(null) }
-    var commentText by remember { mutableStateOf("") }
+    val commentTexts = remember { mutableStateMapOf<Long, String>() }
     var showMyPosts by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -135,21 +137,28 @@ fun BoardScreen(currentUser: String, viewModel: BoardViewModel = viewModel() ) {
 
                     }
 
+                        val text = commentTexts[post.id] ?: ""
+
                         OutlinedTextField(
-                            value = commentText,
-                            onValueChange = { commentText = it },
+                            value = text,
+                            onValueChange = { commentTexts[post.id] = it },
                             placeholder = { Text("댓글을 입력하세요") },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White),
                             singleLine = true
                         )
+
                         Button(onClick = {
-                            if (commentText.isNotBlank()) {
-                                viewModel.addComment(post.id, "$currentUser: $commentText")
-                                commentText = ""
+                            if (text.isNotBlank()) {
+                                viewModel.addComment(post.id, "$currentUser: $text")
+                                commentTexts[post.id] = ""
                             }
                         }) {
                             Text("댓글 등록")
                         }
+
+
                     }
                 }
             }
