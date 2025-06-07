@@ -10,6 +10,13 @@ import com.blessing.channel.common.Constants
 import com.blessing.channel.ui.board.model.BoardPost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import kotlinx.coroutines.flow.update
+
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.HttpURLConnection
 import java.net.URL
 import org.json.JSONArray
@@ -36,15 +43,22 @@ class BoardViewModel : ViewModel() {
                     val json = conn.inputStream.bufferedReader().use { it.readText() }
                     val jsonArray = JSONArray(json)
 
+
                     val postList = (0 until jsonArray.length()).map { i ->
                         val obj = jsonArray.getJSONObject(i)
+                        Log.d("RESPONSE", obj.getString("id").toString())
                         BoardPost(
                             id = obj.getLong("id"),
                             title = obj.getString("title"),
                             content = obj.getString("content"),
                             author = obj.getString("author"),
                             createdAt = obj.getString("createdAt"),
-                            comments = emptyList(),
+                            comments = buildList {
+                                val commentsArray = obj.getJSONArray("comments")
+                                for (i in 0 until commentsArray.length()) {
+                                    add(commentsArray.getString(i))
+                                }
+                            },
                             isNotice = obj.optBoolean("isNotice", obj.getString("author") == "김동준")
                         )
                     }
@@ -162,13 +176,56 @@ fun addPost(title: String, content: String, author: String) {
             }
         }
     }
-
-
     fun addComment(postId: Long, comment: String) {
-        _posts.value = _posts.value.map {
-            if (it.id == postId) it.copy(comments = it.comments + comment) else it
+        viewModelScope.launch(Dispatchers.IO) { // ✅ I/O 전용 쓰레드에서 실행
+            try {
+                val author = comment.substringBefore(":").trim()
+                val content = comment.substringAfter(":").trim()
+
+                val json = """
+                {
+                    "author": "$author",
+                    "content": "$content"
+                }
+            """.trimIndent()
+
+                val client = OkHttpClient()
+                val requestBody = json.toRequestBody("application/json".toMediaType())
+
+                val request = Request.Builder()
+                    .url("${Constants.SERVER_URL}/api/posts/board/$postId/comments")
+                    .post(requestBody)
+                    .build()
+
+                val response = client.newCall(request).execute()
+
+                if (response.isSuccessful) {
+                    // ✅ UI 업데이트는 Main으로 전환
+                    withContext(Dispatchers.Main) {
+                        _posts.value = _posts.value.map {
+                            if (it.id == postId) {
+                                it.copy(comments = it.comments + comment)
+                            } else it
+                        }
+
+                    }
+                    Log.d("Board", "댓글 등록 성공")
+                } else {
+                    Log.e("Board", "댓글 등록 실패: ${response.code}")
+                }
+
+            } catch (e: Exception) {
+                Log.e("Board", "댓글 등록 중 오류 발생", e)
+            }
         }
     }
+
+
+//    fun addComment(postId: Long, comment: String) {
+//        _posts.value = _posts.value.map {
+//            if (it.id == postId) it.copy(comments = it.comments + comment) else it
+//        }
+//    }
 
     fun deleteComment(postId: Long, comment: String) {
         _posts.value = _posts.value.map {

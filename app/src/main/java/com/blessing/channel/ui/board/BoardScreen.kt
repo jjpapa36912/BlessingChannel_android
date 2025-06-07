@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -113,18 +114,26 @@ fun BoardScreen(currentUser: String, viewModel: BoardViewModel = viewModel() ) {
 
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("💬 댓글", fontWeight = FontWeight.Medium)
+
                         post.comments.forEach { comment ->
-                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                Text("- $comment", fontSize = 13.sp)
-                                if (comment.startsWith("$currentUser:")) {
-                                    TextButton(onClick = {
-                                        viewModel.deleteComment(post.id, comment)
-                                    }) {
-                                        Text("삭제", fontSize = 12.sp, color = Color.Red)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                                ) {
+                                    Text("- $comment", fontSize = 13.sp)
+
+                                    if (comment.startsWith("$currentUser:")) {
+                                        TextButton(onClick = {
+                                            viewModel.deleteComment(post.id, comment)
+                                        }) {
+                                            Text("삭제", fontSize = 12.sp, color = Color.Red)
+                                        }
                                     }
-                                }
                             }
                         }
+
+                    }
 
                         OutlinedTextField(
                             value = commentText,
