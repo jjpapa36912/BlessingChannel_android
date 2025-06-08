@@ -158,7 +158,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     .fillMaxWidth()
                     .padding(vertical = 10.dp)
             ) {
-                Text("광고 보고 기부 하기", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("정보 얻고 포인트 획득하기", color = Color.White, fontWeight = FontWeight.Bold)
             }
         } else {
             Log.d("MainScreen", "User is null, not showing RewardedAd Button")
