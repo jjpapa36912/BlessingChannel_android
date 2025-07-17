@@ -177,23 +177,23 @@ fun MyPageScreen(
                 modifier = Modifier.padding(bottom = 20.dp)
             )
 
-            Text("현재 포인트: ${point}P", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("현재 포인트: ${donation}P", fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
             Spacer(modifier = Modifier.height(8.dp))
             Spacer(modifier = Modifier.height(12.dp)) // ← 약간의 여백 추가
             RankingBoard(viewModel = viewModel) // 🔥 랭킹 보드 삽입 위치
 
 
-            Button(
-                onClick = {
-                    context.startActivity(Intent(context, RewardActivity::class.java).apply {
-                        putExtra("rewardLevel", if (point >= 200) "premium" else "basic")
-                    })
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B3E26))
-            ) {
-                Text("쿠폰함 열기", color = Color.White)
-            }
+//            Button(
+//                onClick = {
+//                    context.startActivity(Intent(context, RewardActivity::class.java).apply {
+//                        putExtra("rewardLevel", if (point >= 200) "premium" else "basic")
+//                    })
+//                },
+//                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B3E26))
+//            ) {
+//                Text("쿠폰함 열기", color = Color.White)
+//            }
 
             Text("\uD83C\uDFC6 랭킹 보드", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(top = 16.dp))
             ranking.take(5).forEachIndexed { index, user ->
@@ -202,37 +202,37 @@ fun MyPageScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    if (canRedeem) {
-                        viewModel.redeemReward(context)
-                    } else {
-                        Toast.makeText(context, "포인트가 부족합니다. (100P 이상 필요)", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                enabled = canRedeem,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF795548))
-            ) {
-                Text("보상 받기 (100P 차감)", color = Color.White)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Divider(thickness = 1.dp, color = Color(0xFFBCAAA4))
-            Text(
-                text = "\uD83D\uDCC2 포인트 교환 이력",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B3E26),
-                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
-            )
-
-            if (redeemHistory.isEmpty()) {
-                Text("아직 교환 내역이 없습니다.", fontSize = 14.sp)
-            } else {
-                redeemHistory.reversed().forEach {
-                    Text("• $it", fontSize = 14.sp)
-                }
-            }
+//            Button(
+//                onClick = {
+//                    if (canRedeem) {
+//                        viewModel.redeemReward(context)
+//                    } else {
+//                        Toast.makeText(context, "포인트가 부족합니다. (100P 이상 필요)", Toast.LENGTH_SHORT).show()
+//                    }
+//                },
+//                enabled = canRedeem,
+//                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF795548))
+//            ) {
+//                Text("보상 받기 (100P 차감)", color = Color.White)
+//            }
+//
+//            Spacer(modifier = Modifier.height(24.dp))
+//            Divider(thickness = 1.dp, color = Color(0xFFBCAAA4))
+//            Text(
+//                text = "\uD83D\uDCC2 포인트 교환 이력",
+//                fontSize = 18.sp,
+//                fontWeight = FontWeight.Bold,
+//                color = Color(0xFF6B3E26),
+//                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+//            )
+//
+//            if (redeemHistory.isEmpty()) {
+//                Text("아직 교환 내역이 없습니다.", fontSize = 14.sp)
+//            } else {
+//                redeemHistory.reversed().forEach {
+//                    Text("• $it", fontSize = 14.sp)
+//                }
+//            }
         }
     }
 }
