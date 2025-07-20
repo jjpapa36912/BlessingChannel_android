@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <application
         android:allowBackup="true"
@@ -23,15 +24,14 @@
             android:name="com.kakao.sdk.AppKey"
             android:value="${kakao_native_key}"/>
 
+
         <!-- ✅ ✅ 실제 AdMob 앱 ID만 남김 -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-5025904812537246~2354387903" />
 
         <!-- ✅ 마이페이지 & 보상 액티비티 -->
-        <activity android:name=".ui.mypage.MyPageActivity" />
         <activity android:name=".ui.reward.RewardActivity" />
-        <activity android:name=".ui.board.BoardActivity" />
 
         <!-- ✅ 카카오 로그인 콜백 처리 -->
         <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
